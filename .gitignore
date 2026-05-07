@@ -1,0 +1,2 @@
+#ignore every local/pipeline build
+target/*
