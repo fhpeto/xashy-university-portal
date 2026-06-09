@@ -13,13 +13,11 @@ terraform {
     bucket = "xashy-uni-portal-backend"
     key = "dev/xashy-university-portal.tfstate"
     region = "us-east-2"
-    profile = "terraform"
     use_lockfile = true
     }
 }
 
 provider "aws" {
-    profile = "terraform"
     region = var.region
 
 }
