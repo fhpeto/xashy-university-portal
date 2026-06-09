@@ -1,0 +1,1 @@
+# This repo manages the AWS Infra for xashy UNIVERSITY PORTAL
