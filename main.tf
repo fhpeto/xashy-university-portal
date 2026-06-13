@@ -29,14 +29,11 @@ resource "aws_s3_bucket" "artifact_bucket" {
 
 }
 
-resource "random_id" "suffix" {
-  byte_length = 4
-}
-
 
 resource "random_id" "suffix" {
   byte_length = 4
 }
+
 resource "aws_s3_bucket_versioning" "this" {
   bucket = aws_s3_bucket.artifact_bucket.id
 
