@@ -23,11 +23,96 @@ resource "aws_security_group" "web_app_sg" {
 }
 
 
-resource "aws_instance" "web_app" {
-  ami = "ami-0741dc526e1106ae5"
 
-  instance_type   = "t3.micro"
-  subnet_id       = module.vpc.private_subnets[0]
-  security_groups = [aws_security_group.web_app_sg.id]
+resource "aws_s3_bucket" "artifact_bucket" {
+  bucket = "${var.project}-artifact"
+
+}
+resource "aws_s3_bucket_versioning" "this" {
+  bucket = aws_s3_bucket.artifact_bucket.id
+
+  versioning_configuration {
+
+    status = "Enabled"
+  }
+
 }
 
+data "aws_iam_policy_document" "example" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+# IAM assume role policy for EC2
+data "aws_iam_policy_document" "ec2_assume_role" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "sts:AssumeRole"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+# IAM role for EC2 instance
+resource "aws_iam_role" "web_app_role" {
+  name               = "${var.project}-web-app-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
+}
+
+# Attach Systems Manager policy
+resource "aws_iam_role_policy_attachment" "ssm_policy" {
+  role       = aws_iam_role.web_app_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+# S3 permissions for artifact bucket
+data "aws_iam_policy_document" "s3_artifact_access" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      aws_s3_bucket.artifact_bucket.arn,
+      "${aws_s3_bucket.artifact_bucket.arn}/*"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "s3_artifact_policy" {
+  name   = "${var.project}-s3-artifact-policy"
+  role   = aws_iam_role.web_app_role.id
+  policy = data.aws_iam_policy_document.s3_artifact_access.json
+}
+
+# Instance profile for EC2
+resource "aws_iam_instance_profile" "web_app_profile" {
+  name = "${var.project}-web-app-profile"
+  role = aws_iam_role.web_app_role.name
+}
+
+# Update the EC2 instance resource
+resource "aws_instance" "web_app" {
+  ami                    = "ami-0741dc526e1106ae5"
+  instance_type          = "t3.micro"
+  subnet_id              = module.vpc.private_subnets[0]
+  vpc_security_group_ids = [aws_security_group.web_app_sg.id]
+  iam_instance_profile   = aws_iam_instance_profile.web_app_profile.name
+
+  tags = {
+    Name = "web-app-${var.project}"
+  }
+}
