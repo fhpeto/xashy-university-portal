@@ -85,12 +85,25 @@ jobs:
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
-      run: terraform plan -input=false
+      run: terraform plan -input=false -out=tfplan
+
+    #
+    - name: Upload Terraform Plan Artifact
+      uses: actions/upload-artifact@v7
+      with: 
+        name: tfplan
+        path: ./tfplan
+        retention-days: 2
+
 
   terraform-apply:
     needs: terraform-plan
     name: 'Terraform'
+    # environment: dev
     runs-on: ubuntu-latest
+
+    #run only if we're on the main branch and if the event that triggered
+    if: github.ref == 'ref/heads/main' && github.event_name == 'push'
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:
@@ -114,5 +127,11 @@ jobs:
     - name: Terraform Init
       run: terraform init
 
+    # Download the artifact uploaaaaded in the plan job
+    - name: Download Plan
+      uses: actions/download-artifact@v8  
+      with:
+        name: tfplan
+
     - name: Terraform Apply
-      run: terraform apply --auto-approve
+      run: terraform apply tfplan
