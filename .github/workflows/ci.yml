@@ -91,14 +91,14 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        working-directory: ./app
+        working-directory: ./
         run:
           mvn -B clean verify
       
       - name: Run SonarQube Analysis
         uses: SonarSource/sonarqube-scan-action@v8.0.0 # Ex: v4.1.0 or sha1, See the latest version at https://github.com/marketplace/actions/official-sonarqube-scan
         with:
-          projectBaseDir: app
+          projectBaseDir: ./
           scannerVersion: 6.2.0.4584
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
