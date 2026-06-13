@@ -1,0 +1,72 @@
+name: CD - Upload artifact to S3
+
+on:
+  # Chain off the CI pipeline so we ship the exact artifact that was scanned.
+  workflow_run:
+    workflows: ["Build, SCA, SAST Pipeline"]
+    types:
+      - completed
+  # Manual redeploy: pass the CI run ID whose war-artifact you want to push.
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "CI run ID to pull the war-artifact from"
+        required: true
+
+permissions:
+  contents: read
+  actions: read     # required to download artifacts from another workflow run
+
+jobs:
+  upload-to-s3:
+    runs-on: ubuntu-latest
+
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY}}
+      AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
+
+    # Skip if the CI build failed; always allow the manual path through.
+    if: >
+      ${{ github.event_name == 'workflow_dispatch' ||
+          github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Download war artifact from CI run
+        uses: actions/download-artifact@v4
+        with:
+          name: war-artifact
+          path: ./artifact
+          # workflow_run gives us the upstream run id; dispatch supplies it manually.
+          run-id: ${{ github.event.workflow_run.id || inputs.run_id }}
+          # Required when run-id points at a different workflow run: the action
+          # needs a token to query that run's artifacts via the REST API.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install AWS CLI
+        id: install-aws-cli
+        uses: unfor19/install-aws-cli-action@v1
+        with:
+            version: 2                         # default
+            verbose: false                     # default
+            arch: amd64                        # allowed values: amd64, x86, x64, arm, arm64
+
+      - name: Upload to S3
+        env:
+          BUCKET: xashy-uni-portal-artifact
+          APP: xashy-university-portal
+        run: |
+          set -euo pipefail
+          WAR=$(ls ./artifact/*.war | head -n1)
+          echo "Found artifact: $WAR"
+
+          # head_sha = the commit that was built/scanned in CI.
+          # (On manual dispatch this falls back to the dispatch ref's SHA.)
+          SHA="${{ github.event.workflow_run.head_sha || github.sha }}"
+
+          # Immutable, SHA-keyed copy for traceability...
+          aws s3 cp "$WAR" "s3://${BUCKET}/${APP}/${SHA}/app.war"
+          # ...plus a moving 'latest' pointer for the deploy step to grab.
+          aws s3 cp "$WAR" "s3://${BUCKET}/${APP}/latest/app.war"
+
+          echo "Uploaded to s3://${BUCKET}/${APP}/${SHA}/app.war"
