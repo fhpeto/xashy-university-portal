@@ -99,7 +99,7 @@ jobs:
   terraform-apply:
     needs: terraform-plan
     name: 'Terraform'
-    # environment: dev
+    environment: dev
     runs-on: ubuntu-latest
 
     #run only if we're on the main branch and if the event that triggered
