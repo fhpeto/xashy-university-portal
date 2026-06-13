@@ -9,3 +9,15 @@ variable "region" {
   type        = string
   default     = "us-east-2"
 }
+
+variable "environment" {
+  description = "SDLC environment"
+  type = string
+  default = "dev"
+
+}
+
+variable "project" {
+  description = "name of the project"
+  default  = "xashy-uni-portal"
+}

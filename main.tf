@@ -16,3 +16,16 @@ module "vpc" {
     Project     = "xashy-university-portal"
   }
 }
+
+resource "aws_security_group" "web_app_sg" {
+  name   = "${var.project}-web-app-sg"
+  vpc_id = module.vpc.vpc_id
+}
+
+
+resource "aws_instance" "web_app"{
+  ami = "ami-0f7919fbf83ee4ca0"
+  instance_type = "t2.micro"
+  subnet_id = module.vpc.private_subnets[0]
+}
+
