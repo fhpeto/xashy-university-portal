@@ -25,7 +25,7 @@ resource "aws_security_group" "web_app_sg" {
 
 
 resource "aws_s3_bucket" "artifact_bucket" {
-  bucket = "${var.project}-artifact"
+  bucket = "${var.project}-artifact-${random_id.suffix.hex}"
 
 }
 resource "aws_s3_bucket_versioning" "this" {
@@ -38,17 +38,6 @@ resource "aws_s3_bucket_versioning" "this" {
 
 }
 
-data "aws_iam_policy_document" "example" {
-  statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
 
 # IAM assume role policy for EC2
 data "aws_iam_policy_document" "ec2_assume_role" {
