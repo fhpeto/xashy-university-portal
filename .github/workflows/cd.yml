@@ -92,7 +92,7 @@ jobs:
       # on the artifact bucket, so it pulls the WAR itself.
       - name: Deploy artifact to Tomcat via SSM
         env:
-          BUCKET: xashy-uni-portal-artifact
+          BUCKET: xashy-uni-portal-artifact-b213f4c8
           APP: xashy-university-portal
           INSTANCE_NAME: web-app-xashy-uni-portal
         run: |
