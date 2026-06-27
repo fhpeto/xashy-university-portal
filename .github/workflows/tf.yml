@@ -135,3 +135,11 @@ jobs:
 
     - name: Terraform Apply
       run: terraform apply tfplan
+
+
+    #- name: Run SSM document on EC2
+    #  run: |
+    #    aws ssm send-command \
+    #    --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+    #    --document-name "AWS-RunShellScript" \
+    #    --parameters file://ssm/commands.json
